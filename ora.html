@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Orologio analogico – ore e tacche</title>
+  <style>
+    :root{
+      --bg1:#0b1020;
+      --bg2:#0a0f1a;
+      --text: rgba(255,255,255,.90);
+      --muted: rgba(255,255,255,.65);
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background:
+        radial-gradient(1200px 700px at 20% 10%, rgba(124,92,255,.22), transparent 60%),
+        radial-gradient(900px 600px at 80% 30%, rgba(0,200,255,.18), transparent 55%),
+        radial-gradient(700px 500px at 55% 85%, rgba(255,120,180,.14), transparent 60%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      color:var(--text);
+    }
+
+    .wrap{
+      width:min(520px, 92vw);
+      padding:18px 18px 16px;
+      border-radius:24px;
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:center;
+    }
+
+    .top{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .title{
+      font-size:15px;
+      font-weight:700;
+      color:rgba(255,255,255,.92);
+      user-select:none;
+    }
+    .badge{
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+      color: var(--muted);
+      display:flex;
+      align-items:center;
+      gap:8px;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:50%;
+      background:#ffcc00;
+      box-shadow:0 0 0 4px rgba(255,204,0,.14);
+    }
+    .dot.ok{ background:#49e37a; box-shadow:0 0 0 4px rgba(73,227,122,.14); }
+    .dot.bad{ background:#ff5b7a; box-shadow:0 0 0 4px rgba(255,91,122,.16); }
+
+    .clock{
+      width:min(420px, 86vw);
+      aspect-ratio:1/1;
+      border-radius:50%;
+      overflow:hidden;
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.05),
+        inset 0 -18px 55px rgba(0,0,0,.28),
+        0 22px 70px rgba(0,0,0,.45);
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255,255,255,.09), transparent 58%),
+        radial-gradient(circle at 50% 45%, rgba(255,255,255,.05), rgba(255,255,255,.03) 55%, rgba(0,0,0,.10) 100%);
+      position:relative;
+    }
+
+    .shine{
+      position:absolute;
+      inset:-30%;
+      background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.14), transparent 45%);
+      transform: rotate(-18deg);
+      pointer-events:none;
+      z-index:2;
+    }
+
+    svg{ width:100%; height:100%; display:block; position:relative; z-index:1; }
+
+    .num{
+      font-weight:800;
+      font-size:10px;
+      fill: rgba(255,255,255,.86);
+      user-select:none;
+    }
+    .tickSmall{ stroke: rgba(255,255,255,.40); stroke-width:1.2; stroke-linecap:round; }
+    .tickBig{ stroke: rgba(255,255,255,.70); stroke-width:2.2; stroke-linecap:round; }
+
+    .handHour{ stroke: rgba(255,255,255,.92); stroke-width:4.6; stroke-linecap:round; }
+    .handMin { stroke: rgba(255,255,255,.92); stroke-width:3.4; stroke-linecap:round; }
+    .handSec { stroke: rgba(255,92,156,.95); stroke-width:1.8; stroke-linecap:round; }
+
+    .centerOuter{ fill: rgba(255,255,255,.85); }
+    .centerInner{ fill: rgba(255,92,156,.90); }
+
+    .panel{
+      width:100%;
+      display:flex;
+      gap:10px;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    .card{
+      flex:1 1 170px;
+      min-width:170px;
+      padding:10px 12px;
+      border-radius:16px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+    .label{ font-size:12px; color:var(--muted); margin-bottom:6px; user-select:none; }
+    .value{ font-size:16px; font-weight:800; letter-spacing:.2px; user-select:none; }
+    .small{ font-size:12px; color:var(--muted); margin-top:6px; line-height:1.3; }
+
+    @media (max-width:420px){
+      .num{ font-size:9px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="title">Orologio analogico (ore + tacche)</div>
+      <div class="badge">
+        <span class="dot" id="dot"></span>
+        <span id="status">Sincronizzo…</span>
+      </div>
+    </div>
+
+    <div class="clock">
+      <div class="shine"></div>
+      <svg viewBox="0 0 200 200" aria-label="Orologio analogico">
+        <!-- cerchi sottili -->
+        <circle cx="100" cy="100" r="92" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="1"/>
+        <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+
+        <!-- tacche -->
+        <g id="ticks"></g>
+
+        <!-- numeri ore -->
+        <g id="nums"></g>
+
+        <!-- lancette (linee ruotate attorno al centro) -->
+        <g id="hands" transform="translate(100 100)">
+          <line id="h" class="handHour" x1="0" y1="10" x2="0" y2="-45"/>
+          <line id="m" class="handMin"  x1="0" y1="14" x2="0" y2="-66"/>
+          <line id="s" class="handSec"  x1="0" y1="18" x2="0" y2="-74"/>
+        </g>
+
+        <!-- perno -->
+        <circle class="centerOuter" cx="100" cy="100" r="5"/>
+        <circle class="centerInner" cx="100" cy="100" r="2.2"/>
+      </svg>
+    </div>
+
+    <div class="panel">
+      <div class="card">
+        <div class="label">Ora (Europa/Roma)</div>
+        <div class="value" id="digital">--:--:--</div>
+        <div class="small" id="date">—</div>
+      </div>
+      <div class="card">
+        <div class="label">Fonte</div>
+        <div class="value" id="source">—</div>
+        <div class="small" id="skew">—</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // ====== DISEGNO QUADRANTE (SVG) ======
+  const ticksG = document.getElementById("ticks");
+  const numsG  = document.getElementById("nums");
+
+  function polar(cx, cy, r, deg){
+    const rad = (deg - 90) * Math.PI / 180; // 0° in alto
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  }
+
+  // 60 tacche: piccole e grandi
+  for(let i=0;i<60;i++){
+    const deg = i*6;
+    const big = (i%5===0);
+    const r1 = big ? 72 : 74;
+    const r2 = 80;
+    const p1 = polar(100,100,r1,deg);
+    const p2 = polar(100,100,r2,deg);
+    const line = document.createElementNS("http://www.w3.org/2000/svg","line");
+    line.setAttribute("x1", p1.x.toFixed(2));
+    line.setAttribute("y1", p1.y.toFixed(2));
+    line.setAttribute("x2", p2.x.toFixed(2));
+    line.setAttribute("y2", p2.y.toFixed(2));
+    line.setAttribute("class", big ? "tickBig" : "tickSmall");
+    ticksG.appendChild(line);
+  }
+
+  // Numeri 1..12 allineati alle tacche grandi
+  for(let n=1;n<=12;n++){
+    const deg = n*30;
+    const p = polar(100,100,60,deg);
+    const t = document.createElementNS("http://www.w3.org/2000/svg","text");
+    t.textContent = String(n);
+    t.setAttribute("x", p.x.toFixed(2));
+    t.setAttribute("y", (p.y+3.5).toFixed(2)); // piccola correzione ottica verticale
+    t.setAttribute("text-anchor","middle");
+    t.setAttribute("class","num");
+    numsG.appendChild(t);
+  }
+
+  // ====== ORA DA INTERNET ======
+  const TIMEZONE = "Europe/Rome";
+  const API_URL = `https://gettimeapi.dev/v1/time?timezone=${encodeURIComponent(TIMEZONE)}`;
+
+  const elDot = document.getElementById("dot");
+  const elStatus = document.getElementById("status");
+  const elDigital = document.getElementById("digital");
+  const elDate = document.getElementById("date");
+  const elSource = document.getElementById("source");
+  const elSkew = document.getElementById("skew");
+
+  const handH = document.getElementById("h");
+  const handM = document.getElementById("m");
+  const handS = document.getElementById("s");
+
+  const setStatus = (kind, text) => {
+    elStatus.textContent = text;
+    elDot.classList.remove("ok","bad");
+    if(kind==="ok") elDot.classList.add("ok");
+    if(kind==="bad") elDot.classList.add("bad");
+  };
+
+  let baseUnixMs = null;
+  let basePerfMs = null;
+  let lastSkewMs = null;
+
+  const pad2 = (x)=>String(x).padStart(2,"0");
+  function formatDateIT(date){
+    const days=["Domenica","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
+    const months=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+    return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+  }
+  function nowFromInternetClock(){
+    if(baseUnixMs==null || basePerfMs==null) return null;
+    return new Date(baseUnixMs + (performance.now()-basePerfMs));
+  }
+
+  function updateSkewText(){
+    if(lastSkewMs==null){ elSkew.textContent="—"; return; }
+    const sign = lastSkewMs>=0 ? "+" : "−";
+    elSkew.textContent = `Scarto vs PC: ${sign}${Math.abs(lastSkewMs).toFixed(0)} ms (al sync)`;
+  }
+
+  async function syncInternetTime(){
+    setStatus(null,"Sincronizzo…");
+    elSource.textContent="gettimeapi.dev";
+
+    const t0 = performance.now();
+    const localBefore = Date.now();
+
+    try{
+      const res = await fetch(API_URL,{cache:"no-store"});
+      if(!res.ok) throw new Error("HTTP "+res.status);
+      const data = await res.json();
+
+      let unixMs = null;
+      if(typeof data.timestamp==="number") unixMs = data.timestamp*1000;
+      else if(typeof data.iso8601==="string") unixMs = Date.parse(data.iso8601);
+      else if(typeof data.datetime==="string") unixMs = Date.parse(data.datetime);
+
+      if(!Number.isFinite(unixMs)) throw new Error("Formato tempo non riconosciuto");
+
+      const t1 = performance.now();
+      const centerAdjustMs = (t1 - t0)/2;
+
+      baseUnixMs = unixMs + centerAdjustMs;
+      basePerfMs = performance.now();
+      lastSkewMs = baseUnixMs - localBefore;
+
+      setStatus("ok","Sincronizzato");
+      updateSkewText();
+    }catch(e){
+      baseUnixMs = Date.now();
+      basePerfMs = performance.now();
+      lastSkewMs = null;
+
+      setStatus("bad","Offline (ora locale)");
+      elSource.textContent="Locale (fallback)";
+      elSkew.textContent="Impossibile contattare il server";
+      console.warn("Sync fallita:", e);
+    }
+  }
+
+  function render(){
+    const d = nowFromInternetClock() || new Date();
+    const ms  = d.getMilliseconds();
+    const sec = d.getSeconds() + ms/1000;
+    const min = d.getMinutes() + sec/60;
+    const hr  = (d.getHours()%12) + min/60;
+
+    const secDeg = sec*6;
+    const minDeg = min*6;
+    const hrDeg  = hr*30;
+
+    handS.setAttribute("transform", `rotate(${secDeg})`);
+    handM.setAttribute("transform", `rotate(${minDeg})`);
+    handH.setAttribute("transform", `rotate(${hrDeg})`);
+
+    elDigital.textContent = `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+    elDate.textContent = formatDateIT(d);
+
+    requestAnimationFrame(render);
+  }
+
+  syncInternetTime().then(()=>render());
+  setInterval(syncInternetTime, 5*60*1000);
+})();
+</script>
+</body>
+</html>
